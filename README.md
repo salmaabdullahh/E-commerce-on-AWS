@@ -37,6 +37,8 @@ The `OrderProcessor` Lambda:
   "status": "new",
   "timestamp": "2025-05-07T12:00:00Z"
 }
+
+``````
 🔐 IAM Permissions
 The Lambda role includes:
 
