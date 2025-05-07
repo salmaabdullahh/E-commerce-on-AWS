@@ -1,0 +1,44 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Import existing AWS resources for Order Processing
+
+Parameters:
+  ExistingIAMRoleArn:
+    Type: String
+    Default: arn:aws:iam::442042545749:role/service-role/OrderFunction-role-w0cq2m6w
+
+  OrderQueueArn:
+    Type: String
+    Default: arn:aws:sqs:us-east-1:442042545749:OrderQueue
+
+  OrderQueueDLQArn:
+    Type: String
+    Default: arn:aws:sqs:us-east-1:442042545749:OrderDLQ
+
+  OrderTopicArn:
+    Type: String
+    Default: arn:aws:sns:us-east-1:442042545749:OrderTopic
+
+Resources:
+  ProcessOrderQueueFunction:
+    Type: AWS::Lambda::Function
+    DeletionPolicy: Retain
+    Properties:
+      FunctionName: ProcessOrderQueue
+      Runtime: nodejs22.x 
+      Handler: index.handler
+      Role: arn:aws:iam::442042545749:role/service-role/OrderFunction-role-w0cq2m6w
+      Code:
+        ZipFile: |
+          exports.handler = async (event) => {
+              console.log("Import placeholder");
+              return {};
+          };
+
+  LambdaSQSTrigger:
+    Type: AWS::Lambda::EventSourceMapping
+    DeletionPolicy: Retain
+    Properties:
+      BatchSize: 5
+      Enabled: true
+      EventSourceArn: !Ref OrderQueueArn
+      FunctionName: !Ref ProcessOrderQueueFunction
