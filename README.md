@@ -1,56 +1,32 @@
-# Order Notification System (Event-Driven Architecture)
+# Assignment 2 – Event-Driven Order Notification System
 
-This project implements a simple serverless order notification system using AWS services. It demonstrates an event-driven architecture where messages flow from SNS → SQS → Lambda → DynamoDB.
+This project implements a serverless, event-driven backend system for processing e-commerce orders using AWS services. The system automatically stores new orders and sends out notifications using SNS, SQS, Lambda, and DynamoDB — fully deployed via CloudFormation.
 
----
+## 📦 Architecture Overview
 
-## 🧱 Architecture
+- **Amazon SNS** (`OrderTopic`): Receives order events
+- **Amazon SQS** (`OrderQueue`): Buffers events
+- **Amazon SQS DLQ** (`OrderDLQ`): Handles failed messages after 3 tries
+- **AWS Lambda** (`OrderProcessor`): Parses the message and stores data in DynamoDB
+- **Amazon DynamoDB** (`Orders`): Stores order data
 
-**Services Used:**
+## 🏗️ Stack Deployment (CloudFormation)
 
-- **Amazon DynamoDB**: Stores order records in a table named `Orders`.
-- **Amazon SNS**: Publishes incoming order messages via the `OrderTopic`.
-- **Amazon SQS**: Queue (`OrderQueue`) receives messages from SNS and triggers Lambda.
-- **Amazon SQS DLQ**: `OrderDLQ` handles failed messages after 3 unsuccessful attempts.
-- **AWS Lambda**: Processes messages from the queue and inserts them into DynamoDB.
-- **IAM Role**: Pre-created role used by Lambda for permissions.
+To deploy the full architecture:
 
-**Flow:**
-1. An order message is published to the `OrderTopic`.
-2. The topic sends the message to the `OrderQueue`.
-3. The Lambda function is triggered by the SQS queue.
-4. The function stores the message into the `Orders` DynamoDB table.
+1. Save `template.yaml` from this repo
+2. Go to AWS Console → CloudFormation → Create Stack → Upload `template.yaml`
+3. Launch and monitor stack creation
 
----
+## 🔧 Lambda Function Behavior
 
-## ⚙️ Setup Instructions
+The `OrderProcessor` Lambda:
+- Triggers from `OrderQueue`
+- Parses each message (JSON)
+- Writes order to DynamoDB
+- Logs the process using CloudWatch
 
-### 1. Deploy CloudFormation Stack
-
-- Upload the included `order-notification-system.json` to AWS CloudFormation.
-- Navigate to **CloudFormation > Create Stack > With new resources (standard)**.
-- Choose **Upload a template file** and select the JSON file.
-- Click **Next** through the prompts and create the stack.
-
-> Ensure the following resources already exist:
-> - Lambda function: `OrderFunction`
-> - IAM role: `service-role/OrderFunction-role-w0cq2m6w`
-
-### 2. Manually Subscribe SQS Queue to SNS
-
-> This step is manual unless added to CloudFormation.
-
-- Go to **SNS > OrderTopic > Create subscription**
-- Protocol: `Amazon SQS`
-- Endpoint: ARN of the `OrderQueue`
-- Confirm the subscription
-
----
-
-## 🧪 Test Instructions
-
-1. Go to **SNS > OrderTopic > Publish message**
-2. Use the following test JSON:
+### Example Input (SNS Message Body):
 
 ```json
 {
@@ -59,5 +35,63 @@ This project implements a simple serverless order notification system using AWS 
   "itemName": "Laptop",
   "quantity": 1,
   "status": "new",
-  "timestamp": "2025-05-03T12:00:00Z"
+  "timestamp": "2025-05-07T12:00:00Z"
 }
+🔐 IAM Permissions
+The Lambda role includes:
+
+dynamodb:PutItem for writing orders
+
+sqs:ReceiveMessage, DeleteMessage, GetQueueAttributes
+
+Logging with logs:*
+
+🧪 Testing
+After deployment:
+
+Go to SNS → OrderTopic → Publish a message
+
+Confirm the message is:
+
+Sent to SQS
+
+Processed by Lambda
+
+Stored in DynamoDB
+
+View logs in CloudWatch
+
+🎯 Bonus: CloudFormation Deployment
+This assignment is deployed entirely using AWS CloudFormation. The template.yaml defines:
+
+SNS topic
+
+SQS queue + DLQ
+
+DynamoDB table
+
+Lambda function and permissions
+
+Event source mappings (SQS → Lambda)
+
+🧠 DLQ & Visibility Timeout Explanation
+✅ What is a DLQ?
+A Dead-Letter Queue is a backup queue for messages that can't be processed successfully. In this assignment:
+
+DLQ Name: OrderDLQ
+
+MaxReceiveCount: 3
+
+After 3 failed Lambda attempts to process a message, it moves to the DLQ. This prevents infinite retries and helps with debugging.
+
+⏱️ What is Visibility Timeout?
+The visibility timeout temporarily hides a message after a consumer (like Lambda) retrieves it. If the Lambda doesn’t successfully delete it before the timeout expires, the message becomes visible again for retry.
+
+🔄 Why It Matters
+Together, DLQ and visibility timeout:
+
+Ensure that failed messages are handled separately
+
+Prevent duplicate processing
+
+Improve reliability and observability in serverless architectures
