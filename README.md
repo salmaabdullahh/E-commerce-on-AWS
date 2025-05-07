@@ -7,7 +7,7 @@ This project implements a serverless, event-driven backend system for processing
 - **Amazon SNS** (`OrderTopic`): Receives order events
 - **Amazon SQS** (`OrderQueue`): Buffers events
 - **Amazon SQS DLQ** (`OrderDLQ`): Handles failed messages after 3 tries
-- **AWS Lambda** (`OrderProcessor`): Parses the message and stores data in DynamoDB
+- **AWS Lambda** (`OrderFunction`): Parses the message and stores data in DynamoDB
 - **Amazon DynamoDB** (`Orders`): Stores order data
 
 ## 🏗️ Stack Deployment (CloudFormation)
